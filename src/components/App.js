@@ -1,0 +1,132 @@
+import { createContactList } from './ContactList.js'
+import { createChatWindow } from './ChatWindow.js'
+import { createContactForm } from './ContactForm.js'
+import { state, setState } from '../utils/state.js'
+
+export const createApp = (container) => {
+  setState({
+    selectedContactId: null,
+    showContactForm: false,
+    contacts: [],
+    messages: [],
+    filteredContacts: [],
+    currentFilter: 'all',
+    searchTerm: '' // Ajout du terme de recherche dans le state
+  })
+
+  const render = () => {
+    container.innerHTML = `
+      <div class="flex h-screen bg-whatsapp-bg-dark">
+     
+      <div class="md:flex w-16 bg-whatsapp-bg-dark border-r border-whatsapp-bg-dark flex-col items-center justify-between">
+        <div class="flex flex-col items-center mt-4">
+        <button class="bg-whatsapp-green text-white px-3 py-1 rounded-full text-sm hover:bg-whatsapp-dark-green transition-colors mt-4">
+          <i class="fa-solid fa-message"></i>
+        </button>
+        <button class="bg-whatsapp-bg-light text-whatsapp-text-secondary hover:text-white px-3 py-1 rounded-full text-sm mt-2">
+         <i class="fa-solid fa-circle-notch"></i>
+        </button>
+        <button class="bg-whatsapp-bg-light text-whatsapp-text-secondary hover:text-white px-3 py-1 rounded-full text-sm mt-2">
+          <i class="fa-solid fa-phone"></i>
+        </button>
+        <button class="bg-whatsapp-bg-light text-whatsapp-text-secondary hover:text-white px-3 py-1 rounded-full text-sm mt-2">
+          <i class="fa-solid fa-users-viewfinder"></i>
+        </button>
+        </div>
+        <div class="flex flex-col items-center gap-2 mb-4">
+          <button class="bg-whatsapp-bg-light text-whatsapp-text-secondary hover:text-white px-3 py-1 rounded-full text-sm mt-2">
+            <i class="fa-solid fa-gear text-xl"></i>
+          </button>
+            <img src="../../public/avatars/default.jpeg" alt="" class="w-12 h-12 rounded-full object-cover border border-whatsapp-bg-dark">
+
+          </div>
+      </div>
+     
+        <div class="w-full md:w-1/3 lg:w-1/4 bg-whatsapp-bg-light border-r border-whatsapp-bg-dark flex flex-col">
+          <!-- Header -->
+          <div class="p-4 bg-whatsapp-bg-light border-b border-whatsapp-bg-dark">
+            <div class="flex items-center justify-between">
+              <h1 class="text-xl font-semibold text-whatsapp-text-light">WhatsApp</h1>
+              <button id="add-contact-btn" class="bg-whatsapp-green text-white px-3 py-1 rounded-full text-sm hover:bg-whatsapp-dark-green transition-colors">
+                +
+              </button>
+            </div>
+            <div>
+            <input type="text" id="search-input" placeholder="Rechercher un contact..." value="${state.searchTerm || ''}" class="mt-2 w-full px-3 py-2 rounded bg-whatsapp-bg-dark text-whatsapp-text-light placeholder-whatsapp-text-secondary focus:outline-none focus:ring-2 focus:ring-whatsapp-green">
+            </div>
+            
+            <div class="mt-3 flex gap-2">
+              <button id="filter-all" class="filter-btn px-3 py-1 rounded-full text-xs ${state.currentFilter === 'all' ? 'bg-whatsapp-green text-white' : 'bg-whatsapp-bg-dark text-whatsapp-text-secondary'}">
+                Tous
+              </button>
+              <button id="filter-favorites" class="filter-btn px-3 py-1 rounded-full text-xs ${state.currentFilter === 'favorites' ? 'bg-whatsapp-green text-white' : 'bg-whatsapp-bg-dark text-whatsapp-text-secondary'}">
+                Favoris
+              </button>
+              <button id="filter-archived" class="filter-btn px-3 py-1 rounded-full text-xs ${state.currentFilter === 'archived' ? 'bg-whatsapp-green text-white' : 'bg-whatsapp-bg-dark text-whatsapp-text-secondary'}">
+                Archivés
+              </button>
+            </div>
+          </div>
+          
+          
+          <div id="contact-list" class="flex-1 overflow-y-auto custom-scrollbar">
+          </div>
+        </div>
+
+        
+        <div class="flex-1 flex flex-col">
+         
+          ${state.showContactForm ? '<div id="contact-form-modal" class="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"></div>' : ''}
+          
+         
+          <div id="chat-window" class="flex-1">
+          </div>
+        </div>
+      </div>
+    `
+
+    const contactListElement = container.querySelector('#contact-list')
+    const chatWindowElement = container.querySelector('#chat-window')
+    const searchInput = container.querySelector('#search-input')
+
+    // Configuration de l'événement de recherche
+    searchInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.trim()
+      setState({ ...state, searchTerm })
+      // Re-render seulement la liste de contacts
+      createContactList(contactListElement, render)
+    })
+
+    // Initialisation des composants
+    createContactList(contactListElement, render)
+    createChatWindow(chatWindowElement, render)
+
+    if (state.showContactForm) {
+      const modalElement = container.querySelector('#contact-form-modal')
+      createContactForm(modalElement, render)
+    }
+
+    setupEventListeners(render)
+  }
+
+  const setupEventListeners = (render) => {
+    const addContactBtn = container.querySelector('#add-contact-btn')
+    if (addContactBtn) {
+      addContactBtn.addEventListener('click', () => {
+        setState({ ...state, showContactForm: true })
+        render()
+      })
+    }
+
+    const filterButtons = container.querySelectorAll('.filter-btn')
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const filterId = e.target.id.replace('filter-', '')
+        setState({ ...state, currentFilter: filterId })
+        render()
+      })
+    })
+  }
+
+  render()
+}

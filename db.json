@@ -1,0 +1,103 @@
+{
+  "contacts": [
+    {
+      "id": 1,
+      "name": "Alice Johnson",
+      "phone": "+33 6 12 34 56 78",
+      "avatar": "/avatars/1.jpg",
+      "isFavorite": true,
+      "isArchived": false,
+      "lastMessage": "Salut ! Comment ça va ?",
+      "lastMessageTime": "14:30",
+      "unreadCount": 2
+    },
+    {
+      "id": 3,
+      "name": "Claire Martin",
+      "phone": "+33 6 11 22 33 44",
+      "avatar": "/avatars/3.jpg",
+      "isFavorite": true,
+      "isArchived": false,
+      "lastMessage": "Message archivé",
+      "lastMessageTime": "Hier",
+      "unreadCount": 0
+    },
+    {
+      "name": "mohamed",
+      "phone": "780118223",
+      "avatar": "/avatars/4.jpg",
+      "isFavorite": false,
+      "isArchived": true,
+      "lastMessage": "Nouveau contact",
+      "lastMessageTime": "Maintenant",
+      "unreadCount": 0,
+      "id": 4
+    },
+    {
+      "name": "bilal drame",
+      "phone": "765438974",
+      "avatar": "/avatars/5.jpg",
+      "isFavorite": false,
+      "isArchived": false,
+      "lastMessage": "Nouveau contact",
+      "lastMessageTime": "Maintenant",
+      "unreadCount": 0,
+      "id": 5
+    },
+    {
+      "name": "libasse",
+      "phone": "765433456",
+      "avatar": "/avatars/6.jpg",
+      "isFavorite": false,
+      "isArchived": false,
+      "lastMessage": "Nouveau contact",
+      "lastMessageTime": "Maintenant",
+      "unreadCount": 0,
+      "id": 6
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "contactId": 1,
+      "text": "Salut ! Comment ça va ?",
+      "isFromUser": false,
+      "timestamp": "2024-01-15T14:30:00Z"
+    },
+    {
+      "id": 2,
+      "contactId": 1,
+      "text": "Ça va bien, merci ! Et toi ?",
+      "isFromUser": true,
+      "timestamp": "2024-01-15T14:31:00Z"
+    },
+    {
+      "contactId": 3,
+      "text": "gghhg",
+      "isFromUser": true,
+      "timestamp": "2025-06-09T17:04:29.209Z",
+      "id": 3
+    },
+    {
+      "contactId": 3,
+      "text": "Je vous réponds dès que possible.",
+      "isFromUser": false,
+      "timestamp": "2025-06-09T17:04:31.730Z",
+      "id": 4
+    },
+    {
+      "contactId": 4,
+      "text": "hjhj",
+      "isFromUser": true,
+      "timestamp": "2025-06-09T17:04:49.492Z",
+      "id": 5
+    },
+    {
+      "contactId": 4,
+      "text": "Je vais y réfléchir.",
+      "isFromUser": false,
+      "timestamp": "2025-06-09T17:04:52.019Z",
+      "id": 6
+    }
+  ]
+}
