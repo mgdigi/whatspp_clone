@@ -8,8 +8,8 @@ export const createChatWindow = async (container, rerender) => {
     container.innerHTML = `
       <div class="flex items-center justify-center h-full bg-whatsapp-bg-chat">
         <div class="text-center">
-          <div class="text-6xl mb-4">💬</div>
-          <h2 class="text-xl text-whatsapp-text-light mb-2">WhatsApp Clone</h2>
+          <div class="text-6xl mb-4"><i class="fa-brands fa-whatsapp text-5xl "></i></div>
+          <h2 class="text-xl text-whatsapp-text-light mb-2">Bienvenue Sur Whatspp</h2>
           <p class="text-whatsapp-text-secondary">Sélectionnez un contact pour commencer une conversation</p>
         </div>
       </div>
