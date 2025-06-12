@@ -57,3 +57,13 @@ export const truncateText = (text, maxLength = 50) => {
   if (text.length <= maxLength) return text
   return text.substring(0, maxLength) + '...'
 }
+
+export const formatDate = (date) => {
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
+  return new Date(date).toLocaleDateString('fr-FR', options)
+}
+export const highlightSearchTerm = (text, searchTerm) => {
+  if (!searchTerm) return text
+  const regex = new RegExp(`(${searchTerm})`, 'gi')
+  return text.replace(regex, '<span class="bg-yellow-200">$1</span>')
+}

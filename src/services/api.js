@@ -1,6 +1,5 @@
 const API_BASE_URL = 'https://json-server-7n1p.onrender.com'
 
-// Service générique pour les appels API
 const createApiService = (endpoint) => ({
   async getAll() {
     try {
@@ -16,7 +15,15 @@ const createApiService = (endpoint) => ({
   async getById(id) {
     try {
       const response = await fetch(`${API_BASE_URL}/${endpoint}/${id}`)
+
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        const currentContact = localStorage.getItem('currentContact')
+      if (currentContact) {
+          const parsedCurrentContact = JSON.parse(currentContact)
+          if (parsedCurrentContact.id === id) {
+            localStorage.removeItem('currentContact')
+          }
+        }
       return await response.json()
     } catch (error) {
       console.error(`Error fetching ${endpoint} ${id}:`, error)
@@ -72,7 +79,6 @@ const createApiService = (endpoint) => ({
   }
 })
 
-// Services spécialisés
 export const contactsService = createApiService('contacts')
 
 export const messagesService = {

@@ -4,12 +4,10 @@ import { avatarService } from '../services/avatarService.js'
 
 export const createContactList = async (container, rerender) => {
   const contacts = await contactsService.getAll()
-  setState({ ...state, contacts })
+  setState({ ...state, contacts, showajouterSection: false,  showContactForm: false, })
 
-  // Application du filtre ET de la recherche
   let filteredContacts = filterContacts(contacts, state.currentFilter)
   
-  // Application de la recherche si un terme est présent
   if (state.searchTerm && state.searchTerm.trim() !== '') {
     const searchTerm = state.searchTerm.toLowerCase()
     filteredContacts = filteredContacts.filter(contact =>
@@ -31,13 +29,45 @@ export const createContactList = async (container, rerender) => {
       `
       return
     }
+    
 
-    container.innerHTML = filteredContacts.map(contact => {
+    container.innerHTML = ` 
+    <div id="ajouter-section" class="${state.showajouterSection ? 'mb-5 ml-4' : 'hidden'}">
+    <div id="add-groupe-btn" class="flex items-center space-x-3 p-3 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors duration-200">
+            <div class="bg-green-500 rounded-full p-2">
+                <i class="fa-solid fa-user-group"></i>
+            </div>
+            <span class="text-white font-medium">Nouveau groupe</span>
+        </div>
+
+        <!-- Nouveau contact -->
+        <div id="add-contact-btn" class="flex items-center space-x-3 p-3 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors duration-200">
+            <div class="bg-green-500 rounded-full p-2">
+                <i class="fa-solid fa-address-book"></i>
+            </div>
+            <span class="text-white font-medium">Nouveau contact</span>
+        </div>
+
+        <!-- Nouvelle communauté -->
+        <div class="flex items-center space-x-3 p-3 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors duration-200">
+            <div class="bg-green-500 rounded-full p-2">
+                <i class="fa-solid fa-people-roof"></i>
+            </div>
+            <span class="text-white font-medium">Nouvelle communauté</span>
+        </div>
+    </div>
+    </div>
+    <h2 class="ml-5 text-text-light"> Liste des contacts ${state.currentFilter === 'favorites' ? 'favoris' : state.currentFilter === 'archived' ? 'archivés' : ''}</h2>
+    ` +
+    
+    
+    filteredContacts.map(contact => {
       const avatarSrc = contact.avatar.startsWith('/avatars/') 
         ? avatarService.getAvatar(contact.id)
         : contact.avatar
 
       return `
+      
         <div class="contact-item p-4 border-b border-whatsapp-bg-dark  cursor-pointer transition-colors ${state.selectedContactId === contact.id ? 'bg-whatsapp-bg-dark' : ''}" 
              data-contact-id="${contact.id}">
           <div class="flex items-center gap-3">
@@ -86,8 +116,27 @@ export const createContactList = async (container, rerender) => {
     setupContactListEvents(rerender)
   }
 
+
+
   const setupContactListEvents = (rerender) => {
     const contactItems = container.querySelectorAll('.contact-item')
+     const addContactBtn = container.querySelector('#add-contact-btn')
+     const addGroupBtn = container.querySelector('#add-groupe-btn')
+    
+     if(addContactBtn){
+      addContactBtn.addEventListener('click', () => {
+        setState({ ...state, showContactForm: true })
+        rerender()
+      })
+     }
+
+     if(addGroupBtn){
+      addGroupBtn.addEventListener('click', () => {
+        setState({ ...state, showGroupForm: true })
+        rerender()
+      })
+     }
+
     contactItems.forEach(item => {
       item.addEventListener('click', (e) => {
         if (!e.target.closest('button')) {
@@ -191,6 +240,14 @@ export const createContactList = async (container, rerender) => {
       })
     })
 
+    const addSectionBtn = document.querySelector('#add-section-btn')
+        if (addSectionBtn) {
+          addSectionBtn.addEventListener('click', () => {
+            setState({ ...state, showajouterSection: true })
+            render()
+          })
+        }
+
     const deleteButtons = container.querySelectorAll('.delete-btn')
     deleteButtons.forEach(btn => {
       btn.addEventListener('click', async (e) => {
@@ -240,7 +297,6 @@ const getFilterLabel = (filter) => {
   }
 }
 
-// Fonction pour surligner le terme recherché dans le nom
 const highlightSearchTerm = (text, searchTerm) => {
   if (!searchTerm || searchTerm.trim() === '') {
     return text
