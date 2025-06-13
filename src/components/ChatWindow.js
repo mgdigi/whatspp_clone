@@ -246,19 +246,3 @@ const getSenderName = (senderId) => {
   return user ? user.username : 'Utilisateur inconnu'
 }
 
-// const generateAutoReply = (userMessage) => {
-//   const replies = [
-//     "Merci pour votre message !",
-//     "Je vous réponds dès que possible.",
-//     "Message bien reçu 👍",
-//     "Intéressant ! Dites-moi en plus.",
-//     "Je suis d'accord avec vous.",
-//     "Excellente question !",
-//     "Merci pour l'information.",
-//     "À bientôt !",
-//     "Parfait, c'est noté.",
-//     "Je vais y réfléchir."
-//   ]
-  
-//   return replies[Math.floor(Math.random() * replies.length)]
-// }
