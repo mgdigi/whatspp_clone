@@ -9,6 +9,8 @@ export const conversationService = {
     }
   },
 
+  
+
   async createDirectConversation(userId1, userId2) {
     try {
       const existing = await this.findDirectConversation(userId1, userId2)
@@ -211,7 +213,18 @@ export const conversationService = {
       console.error('Erreur récupération conversations non lues:', error)
       return []
     }
+  },
+
+  async getAllUsers() {
+    try {
+      const response = await fetch('https://json-server-7n1p.onrender.com/users')
+      return await response.json()
+    } catch (error) {
+      console.error('Erreur récupération utilisateurs:', error)
+      return []
+    }
   }
+
     
 }
 

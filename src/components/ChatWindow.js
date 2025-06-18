@@ -7,42 +7,154 @@ import { mediaService } from '../services/mediaService.js'
 import 'emoji-picker-element'
 
 export const createChatWindow = async (container, rerender) => {
-  // Vérification des données nécessaires
-  if (!state.conversations || !state.users) {
+  // CORRECTION 1: Vérifications de sécurité au début
+  if (!state.currentUser) {
     container.innerHTML = `
       <div class="flex items-center justify-center h-full bg-whatsapp-bg-chat">
         <div class="text-center">
-          <div class="text-whatsapp-text-light">Chargement de la conversation...</div>
+          <div class="text-6xl mb-4">🔒</div>
+          <h2 class="text-xl mb-2 text-whatsapp-text-light">Session expirée</h2>
+          <p class="text-whatsapp-text-secondary">Veuillez vous reconnecter</p>
         </div>
       </div>
     `
     return
   }
 
-  // Marquer la conversation comme lue
-  if (state.selectedConversationId) {
-    await messageService.markConversationAsRead(state.selectedConversationId, state.currentUser.id)
-    const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
-    setState({ ...state, conversations: updatedConversations })
+  if (!state.selectedConversationId) {
+    container.innerHTML = `
+      <div class="flex items-center justify-center h-full bg-whatsapp-bg-chat">
+        <div class="text-center">
+          <div class="text-6xl mb-4">💬</div>
+          <h2 class="text-xl mb-2 text-whatsapp-text-light">WhatsApp Web</h2>
+          <p class="text-whatsapp-text-secondary">Sélectionnez une conversation pour commencer</p>
+        </div>
+      </div>
+    `
+    return
   }
 
-  // Récupérer les messages
-  const messages = await messageService.getConversationMessages(state.selectedConversationId)
-  setState({ ...state, messages })
+  // CORRECTION 2: Initialiser l'état de chargement
+  setState({ ...state, isLoadingMessages: true })
 
-  const conversation = state.conversations.find(c => c.id === state.selectedConversationId)
-  if (!conversation) return
+  // Afficher l'état de chargement
+  container.innerHTML = `
+    <div class="flex items-center justify-center h-full bg-whatsapp-bg-chat">
+      <div class="text-center">
+        <div class="animate-spin text-4xl mb-4">⏳</div>
+        <div class="text-whatsapp-text-light">Chargement de la conversation...</div>
+      </div>
+    </div>
+  `
 
-  // Déterminer le nom et l'avatar à afficher
+  try {
+    // CORRECTION 3: Charger les données de manière sécurisée
+    const [conversations, users, messages] = await Promise.all([
+      conversationService.getUserConversations(state.currentUser.id),
+      // Charger les utilisateurs si pas déjà chargés
+      state.users && state.users.length > 0 ? Promise.resolve(state.users) : conversationService.getAllUsers(),
+      messageService.getConversationMessages(state.selectedConversationId)
+    ])
+
+    // Mettre à jour l'état avec les données chargées
+    setState({ 
+      ...state, 
+      conversations: conversations || [],
+      users: users || [],
+      messages: messages || [],
+      isLoadingMessages: false
+    })
+
+    // CORRECTION 4: Vérifier que la conversation existe
+    const conversation = state.conversations.find(c => c.id === state.selectedConversationId)
+    
+    if (!conversation) {
+      container.innerHTML = `
+        <div class="flex items-center justify-center h-full bg-whatsapp-bg-chat">
+          <div class="text-center">
+            <div class="text-6xl mb-4">❌</div>
+            <h2 class="text-xl mb-2 text-whatsapp-text-light">Conversation introuvable</h2>
+            <p class="text-whatsapp-text-secondary">Cette conversation n'existe plus</p>
+          </div>
+        </div>
+      `
+      setState({ ...state, selectedConversationId: null })
+      return
+    }
+
+    // CORRECTION 5: Vérifier l'accès à la conversation
+    const hasAccess = conversation.participants && conversation.participants.includes(state.currentUser.id)
+    
+    if (!hasAccess) {
+      container.innerHTML = `
+        <div class="flex items-center justify-center h-full bg-whatsapp-bg-chat">
+          <div class="text-center">
+            <div class="text-6xl mb-4">🚫</div>
+            <h2 class="text-xl mb-2 text-whatsapp-text-light">Accès refusé</h2>
+            <p class="text-whatsapp-text-secondary">Vous n'avez pas accès à cette conversation</p>
+          </div>
+        </div>
+      `
+      setState({ ...state, selectedConversationId: null })
+      return
+    }
+
+    // Marquer la conversation comme lue
+    if (state.selectedConversationId) {
+      await messageService.markConversationAsRead(state.selectedConversationId, state.currentUser.id)
+      const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
+      setState({ ...state, conversations: updatedConversations })
+    }
+
+    // Continuer avec le rendu
+    await renderChatInterface(container, rerender, conversation)
+
+  } catch (error) {
+    console.error('Erreur chargement conversation:', error)
+    
+    container.innerHTML = `
+      <div class="flex items-center justify-center h-full bg-whatsapp-bg-chat">
+        <div class="text-center">
+          <div class="text-6xl mb-4">⚠️</div>
+          <h2 class="text-xl mb-2 text-whatsapp-text-light">Erreur de chargement</h2>
+          <p class="text-whatsapp-text-secondary">Impossible de charger la conversation</p>
+          <button 
+            onclick="location.reload()" 
+            class="mt-4 px-4 py-2 bg-whatsapp-green text-white rounded hover:bg-whatsapp-dark-green transition-colors"
+          >
+            Réessayer
+          </button>
+        </div>
+      </div>
+    `
+    
+    setState({ 
+      ...state, 
+      isLoadingMessages: false,
+      selectedConversationId: null
+    })
+  }
+}
+
+// CORRECTION 6: Séparer la logique de rendu
+const renderChatInterface = async (container, rerender, conversation) => {
+  // CORRECTION 7: Vérifications de sécurité pour les données
+  if (!conversation || !state.users) {
+    console.error('Données manquantes pour le rendu')
+    return
+  }
+
   let displayName, displayAvatar
+  
   if (conversation.type === 'group') {
-    displayName = conversation.name
+    displayName = conversation.name || 'Groupe sans nom'
     displayAvatar = conversation.avatar || '../../public/avatars/group-default.png'
   } else {
-    const otherParticipantId = conversation.participants.find(id => id !== state.currentUser.id)
+    const otherParticipantId = conversation.participants?.find(id => id !== state.currentUser?.id)
     const otherParticipant = state.users.find(u => u.id === otherParticipantId)
+    
     if (otherParticipant) {
-      displayName = otherParticipant.username
+      displayName = otherParticipant.username || 'Utilisateur'
       displayAvatar = otherParticipant.avatar || avatarService.getAvatar(otherParticipant.id)
     } else {
       displayName = 'Utilisateur inconnu'
@@ -61,7 +173,10 @@ export const createChatWindow = async (container, rerender) => {
           <div class="flex-1">
             <h3 class="font-medium text-whatsapp-text-light">${displayName}</h3>
             <p class="text-sm text-whatsapp-text-secondary">
-              ${conversation.type === 'group' ? `${conversation.participants.length} participants` : 'En ligne'}
+              ${conversation.type === 'group' 
+                ? `${conversation.participants?.length || 0} participants` 
+                : 'En ligne'
+              }
             </p>
           </div>
           <div class="flex items-center gap-2">
@@ -78,7 +193,7 @@ export const createChatWindow = async (container, rerender) => {
 
         <!-- Messages -->
         <div id="messages-container" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
-          ${renderMessages(state.messages)}
+          ${renderMessages(state.messages || [])}
           <div id="typing-indicator" class="hidden">
             <div class="message-bubble message-contact bg-whatsapp-bg-light p-3 rounded-lg">
               <div class="typing-indicator">
@@ -144,11 +259,9 @@ export const createChatWindow = async (container, rerender) => {
                 <i class="fa-solid fa-times text-xl"></i>
               </button>
             </div>
-            
             <div id="media-preview-container" class="p-4 grid grid-cols-2 gap-4 max-h-64 overflow-y-auto">
               <!-- Prévisualisations des médias -->
             </div>
-            
             <div class="p-4 border-t border-whatsapp-bg-dark">
               <textarea
                 id="media-caption"
@@ -156,7 +269,6 @@ export const createChatWindow = async (container, rerender) => {
                 class="w-full bg-whatsapp-bg-dark text-whatsapp-text-light rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-whatsapp-green resize-none"
                 rows="2"
               ></textarea>
-              
               <div class="flex justify-end gap-3 mt-3">
                 <button id="cancel-media-send" class="px-4 py-2 text-whatsapp-text-secondary hover:text-whatsapp-text-light">
                   Annuler
@@ -169,7 +281,7 @@ export const createChatWindow = async (container, rerender) => {
           </div>
         </div>
 
-        <!-- Modal enregistrement vocal -->
+               <!-- Modal enregistrement vocal -->
         <div id="voice-recorder" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
           <div class="bg-whatsapp-bg-light rounded-lg p-6 mx-4 text-center">
             <div class="text-whatsapp-text-light mb-4">
@@ -192,11 +304,10 @@ export const createChatWindow = async (container, rerender) => {
       </div>
     `
 
-    setupChatEvents(rerender)
+    setupChatEvents(rerender, conversation, selectedFiles)
     scrollToBottom()
   }
 
-  // Fonctions utilitaires
   const showTypingIndicator = () => {
     const indicator = container.querySelector('#typing-indicator')
     if (indicator) {
@@ -238,7 +349,6 @@ export const createChatWindow = async (container, rerender) => {
         ? 'message-user bg-whatsapp-green text-white ml-auto'
         : 'message-contact bg-whatsapp-bg-light text-whatsapp-text-light'
 
-      // Messages vocaux
       if (message.type === 'voice') {
         return `
           <div class="message-bubble ${messageClass} p-3 rounded-lg max-w-xs relative group">
@@ -270,11 +380,10 @@ export const createChatWindow = async (container, rerender) => {
         `
       }
 
-      // Messages média (image/vidéo)
       if (message.type === 'image' || message.type === 'video') {
         return `
           <div class="message-bubble ${messageClass} p-3 rounded-lg max-w-xs relative group">
-                        ${conversation.type === 'group' && !isCurrentUser ? `<div class="text-xs text-whatsapp-green font-medium mb-1">${senderName}</div>` : ''}
+            ${conversation.type === 'group' && !isCurrentUser ? `<div class="text-xs text-whatsapp-green font-medium mb-1">${senderName}</div>` : ''}
             <div class="message-content">
               ${renderMediaMessage(message)}
             </div>
@@ -291,7 +400,6 @@ export const createChatWindow = async (container, rerender) => {
         `
       }
 
-      // Messages texte
       return `
         <div class="message-bubble ${messageClass} p-3 rounded-lg max-w-xs relative group">
           ${conversation.type === 'group' && !isCurrentUser ? `<div class="text-xs text-whatsapp-green font-medium mb-1">${senderName}</div>` : ''}
@@ -313,12 +421,15 @@ export const createChatWindow = async (container, rerender) => {
   }
 
   const getSenderName = (senderId) => {
+    // CORRECTION 8: Vérification de sécurité pour state.users
+    if (!state.users || !Array.isArray(state.users)) {
+      return 'Utilisateur inconnu'
+    }
     const user = state.users.find(u => u.id === senderId)
     return user ? user.username : 'Utilisateur inconnu'
   }
 
-  const setupChatEvents = (rerender) => {
-    // Bouton retour
+  const setupChatEvents = (rerender, conversation, selectedFiles) => {
     const backBtn = container.querySelector('#back-btn')
     if (backBtn) {
       backBtn.addEventListener('click', () => {
@@ -327,7 +438,6 @@ export const createChatWindow = async (container, rerender) => {
       })
     }
 
-    // Formulaire de message
     const messageForm = container.querySelector('#message-form')
     const messageInput = container.querySelector('#message-input')
     
@@ -344,7 +454,7 @@ export const createChatWindow = async (container, rerender) => {
             text
           )
 
-          const updatedMessages = [...state.messages, savedMessage]
+          const updatedMessages = [...(state.messages || []), savedMessage]
           setState({ ...state, messages: updatedMessages })
 
           const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
@@ -353,7 +463,6 @@ export const createChatWindow = async (container, rerender) => {
           messageInput.value = ''
           render()
 
-          // Simulation de réponse automatique pour les conversations directes
           if (conversation.type === 'direct') {
             setTimeout(async () => {
               showTypingIndicator()
@@ -376,16 +485,9 @@ export const createChatWindow = async (container, rerender) => {
       messageInput.focus()
     }
 
-    // Gestion des emojis
     setupEmojiPicker(messageInput)
-
-    // Gestion des médias
-    setupMediaHandling()
-
-    // Gestion de l'enregistrement vocal
+    setupMediaHandling(selectedFiles)
     setupVoiceRecording(rerender)
-
-    // Boutons d'action des messages
     setupMessageActions()
   }
 
@@ -395,29 +497,24 @@ export const createChatWindow = async (container, rerender) => {
     const emojiPicker = container.querySelector('emoji-picker')
 
     if (emojiBtn && emojiPickerContainer && emojiPicker) {
-      // Ouvrir/fermer le picker
       emojiBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         emojiPickerContainer.classList.toggle('hidden')
       })
 
-      // Sélection d'un emoji
       emojiPicker.addEventListener('emoji-click', (event) => {
         const emoji = event.detail.emoji.unicode
         const currentValue = messageInput.value
         const cursorPosition = messageInput.selectionStart
-        
         const newValue = currentValue.slice(0, cursorPosition) + emoji + currentValue.slice(cursorPosition)
-        messageInput.value = newValue
         
+        messageInput.value = newValue
         const newCursorPosition = cursorPosition + emoji.length
         messageInput.setSelectionRange(newCursorPosition, newCursorPosition)
-        
         emojiPickerContainer.classList.add('hidden')
         messageInput.focus()
       })
 
-      // Fermer le picker en cliquant ailleurs
       document.addEventListener('click', (e) => {
         if (!emojiPickerContainer.contains(e.target) && e.target !== emojiBtn) {
           emojiPickerContainer.classList.add('hidden')
@@ -426,7 +523,7 @@ export const createChatWindow = async (container, rerender) => {
     }
   }
 
-  const setupMediaHandling = () => {
+  const setupMediaHandling = (selectedFiles) => {
     const mediaBtn = container.querySelector('#media-btn')
     const mediaInput = container.querySelector('#media-input')
 
@@ -456,21 +553,22 @@ export const createChatWindow = async (container, rerender) => {
         }
 
         if (validFiles.length > 0) {
-          selectedFiles = validFiles
-          await showMediaPreview()
+          selectedFiles.length = 0
+          selectedFiles.push(...validFiles)
+          await showMediaPreview(selectedFiles)
         }
 
         mediaInput.value = ''
       })
     }
 
-    setupMediaPreviewEvents()
+    setupMediaPreviewEvents(selectedFiles)
   }
 
-  const showMediaPreview = async () => {
+  const showMediaPreview = async (selectedFiles) => {
     const modal = container.querySelector('#media-preview-modal')
     const previewContainer = container.querySelector('#media-preview-container')
-    
+
     modal.classList.remove('hidden')
     previewContainer.innerHTML = ''
 
@@ -508,17 +606,15 @@ export const createChatWindow = async (container, rerender) => {
         }
       }
 
-      // Bouton de suppression
       const removeBtn = document.createElement('button')
       removeBtn.className = 'media-preview-remove absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600'
       removeBtn.innerHTML = '<i class="fa-solid fa-times text-xs"></i>'
       removeBtn.addEventListener('click', () => {
         selectedFiles.splice(i, 1)
-        showMediaPreview()
+        showMediaPreview(selectedFiles)
       })
       previewItem.appendChild(removeBtn)
 
-      // Informations du fichier
       const fileInfo = document.createElement('div')
       fileInfo.className = 'media-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent text-white p-2'
       fileInfo.innerHTML = `
@@ -526,12 +622,11 @@ export const createChatWindow = async (container, rerender) => {
         <div class="text-xs opacity-75">${mediaService.formatFileSize(file.size)}</div>
       `
       previewItem.appendChild(fileInfo)
-
       previewContainer.appendChild(previewItem)
     }
   }
 
-  const setupMediaPreviewEvents = () => {
+    const setupMediaPreviewEvents = (selectedFiles) => {
     const modal = container.querySelector('#media-preview-modal')
     const closeBtn = container.querySelector('#close-media-preview')
     const cancelBtn = container.querySelector('#cancel-media-send')
@@ -540,20 +635,20 @@ export const createChatWindow = async (container, rerender) => {
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
         modal.classList.add('hidden')
-        selectedFiles = []
+        selectedFiles.length = 0
       })
     }
 
     if (cancelBtn) {
       cancelBtn.addEventListener('click', () => {
         modal.classList.add('hidden')
-        selectedFiles = []
+        selectedFiles.length = 0
       })
     }
 
     if (sendBtn) {
       sendBtn.addEventListener('click', async () => {
-        await sendMediaMessages()
+        await sendMediaMessages(selectedFiles)
       })
     }
 
@@ -561,13 +656,13 @@ export const createChatWindow = async (container, rerender) => {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           modal.classList.add('hidden')
-          selectedFiles = []
+          selectedFiles.length = 0
         }
       })
     }
   }
 
-  const sendMediaMessages = async () => {
+  const sendMediaMessages = async (selectedFiles) => {
     const caption = container.querySelector('#media-caption').value.trim()
     const modal = container.querySelector('#media-preview-modal')
 
@@ -616,7 +711,7 @@ export const createChatWindow = async (container, rerender) => {
       setState({ ...state, conversations: updatedConversations })
 
       modal.classList.add('hidden')
-      selectedFiles = []
+      selectedFiles.length = 0
       container.querySelector('#media-caption').value = ''
       render()
 
@@ -635,7 +730,7 @@ export const createChatWindow = async (container, rerender) => {
     const cancelBtn = container.querySelector('#cancel-recording')
     const sendBtn = container.querySelector('#send-recording')
     const timerElement = container.querySelector('#recording-timer')
-    
+
     let recordingTimer = null
     let recordingStartTime = null
 
@@ -651,7 +746,7 @@ export const createChatWindow = async (container, rerender) => {
           await audioService.startRecording()
           voiceRecorder.classList.remove('hidden')
           recordingStartTime = Date.now()
-          
+
           recordingTimer = setInterval(() => {
             const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000)
             timerElement.textContent = audioService.formatDuration(elapsed)
@@ -693,12 +788,13 @@ export const createChatWindow = async (container, rerender) => {
         recordingTimer = null
       }
       audioService.cancelRecording()
-            voiceRecorder.classList.add('hidden')
+      voiceRecorder.classList.add('hidden')
       timerElement.textContent = '0:00'
     }
 
     const sendRecording = async () => {
       const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000)
+      
       if (elapsed < 1) {
         alert('Enregistrement trop court (minimum 1 seconde)')
         return
@@ -756,7 +852,7 @@ export const createChatWindow = async (container, rerender) => {
       const savedMessage = await response.json()
       await conversationService.updateLastMessage(state.selectedConversationId, savedMessage)
 
-      const updatedMessages = [...state.messages, savedMessage]
+      const updatedMessages = [...(state.messages || []), savedMessage]
       setState({ ...state, messages: updatedMessages })
 
       const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
@@ -774,7 +870,6 @@ export const createChatWindow = async (container, rerender) => {
   }
 
   const setupMessageActions = () => {
-    // Boutons marquer comme important
     const importantButtons = container.querySelectorAll('.mark-important-btn')
     importantButtons.forEach(btn => {
       btn.addEventListener('click', async (e) => {
@@ -793,7 +888,6 @@ export const createChatWindow = async (container, rerender) => {
       })
     })
 
-    // Boutons supprimer message
     const deleteButtons = container.querySelectorAll('.delete-message-btn')
     deleteButtons.forEach(btn => {
       btn.addEventListener('click', async (e) => {
@@ -813,7 +907,6 @@ export const createChatWindow = async (container, rerender) => {
       })
     })
 
-    // Boutons lecture message vocal
     const playButtons = container.querySelectorAll('.play-voice-btn')
     playButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -859,8 +952,8 @@ export const createChatWindow = async (container, rerender) => {
     if (message.type === 'image') {
       return `
         <div class="media-message">
-          <img 
-            src="${message.mediaData.base64Data}" 
+          <img
+            src="${message.mediaData.base64Data}"
             alt="Image"
             class="max-w-xs rounded-lg cursor-pointer"
             onclick="openImageModal('${message.mediaData.base64Data}')"
@@ -871,9 +964,9 @@ export const createChatWindow = async (container, rerender) => {
     } else if (message.type === 'video') {
       return `
         <div class="media-message relative">
-          <video 
-            controls 
-            class="max-w-xs rounded-lg" 
+          <video
+            controls
+            class="max-w-xs rounded-lg"
             ${message.mediaData.thumbnail ? `poster="${message.mediaData.thumbnail}"` : ''}
           >
             <source src="${message.mediaData.base64Data}" type="${message.mediaData.mimeType}">
@@ -898,17 +991,16 @@ export const createChatWindow = async (container, rerender) => {
     modal.innerHTML = `
       <div class="relative max-w-4xl max-h-4xl">
         <img src="${imageSrc}" alt="Image" class="max-w-full max-h-full object-contain">
-        <button 
-          class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300" 
+        <button
+          class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300"
           onclick="this.parentElement.parentElement.remove()"
         >
           <i class="fa-solid fa-times"></i>
         </button>
       </div>
     `
-    
     document.body.appendChild(modal)
-    
+
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove()
@@ -916,8 +1008,7 @@ export const createChatWindow = async (container, rerender) => {
     })
   }
 
-  // Initialiser le rendu
+  // Démarrer le rendu
   render()
 }
-
 

@@ -135,21 +135,30 @@ export const setupEventListeners = (container, render, authService, setState, st
     })
   }
 
+   const logout = () => {
+  // Nettoyer complètement l'état
+  setState({
+    currentUser: null,
+    conversations: [],
+    messages: [],
+    users: [],
+    selectedConversationId: null,
+    currentConversation: null,
+    isLoadingMessages: false,
+    searchTerm: '',
+    currentFilter: 'all',
+    // ... autres propriétés à réinitialiser
+  })
+  
+  localStorage.removeItem('currentUser')
+  window.location.reload()
+}
+
+
   const logoutBtn = container.querySelector('#logout-btn')
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      authService.logout()
-      
-      setState({
-        ...state,
-        showLoginForm: true,
-        currentUser: null,
-        showChatWindow: false,
-        selectedContactId: null,
-        selectedConversationId: null,
-        messages: [],
-        conversations: []
-      })
+      logout()
       
       render()
     })
