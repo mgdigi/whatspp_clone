@@ -1,5 +1,4 @@
 export const mediaService = {
-  // Validation des fichiers
   validateMediaFile(file) {
     const errors = []
     const maxSize = 50 * 1024 * 1024 // 50MB
@@ -29,7 +28,6 @@ export const mediaService = {
     }
   },
 
-  // Convertir fichier en base64
   fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -39,7 +37,6 @@ export const mediaService = {
     })
   },
 
-  // Créer une miniature pour les vidéos
   createVideoThumbnail(file) {
     return new Promise((resolve) => {
       const video = document.createElement('video')
@@ -50,7 +47,7 @@ export const mediaService = {
         canvas.width = 300
         canvas.height = (video.videoHeight / video.videoWidth) * 300
         
-        video.currentTime = 1 // Prendre une frame à 1 seconde
+        video.currentTime = 1 
       }
       
       video.onseeked = () => {
@@ -65,7 +62,6 @@ export const mediaService = {
     })
   },
 
-  // Obtenir la durée d'une vidéo
   getVideoDuration(file) {
     return new Promise((resolve) => {
       const video = document.createElement('video')
@@ -80,7 +76,6 @@ export const mediaService = {
     })
   },
 
-  // Redimensionner une image
   resizeImage(file, maxWidth = 800, maxHeight = 600, quality = 0.8) {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas')
@@ -90,7 +85,6 @@ export const mediaService = {
       img.onload = () => {
         let { width, height } = img
         
-        // Calculer les nouvelles dimensions
         if (width > height) {
           if (width > maxWidth) {
             height = (height * maxWidth) / width
@@ -115,7 +109,6 @@ export const mediaService = {
     })
   },
 
-  // Sauvegarder un média
   async saveMedia(file, conversationId, senderId) {
     try {
       const validation = this.validateMediaFile(file)
@@ -130,14 +123,11 @@ export const mediaService = {
       let thumbnail = null
       let duration = null
 
-      // Traitement selon le type
       if (validation.type === 'image') {
-        // Redimensionner l'image si nécessaire
-        if (file.size > 2 * 1024 * 1024) { // Si > 2MB
+        if (file.size > 2 * 1024 * 1024) { 
           processedFile = await this.resizeImage(file)
         }
       } else if (validation.type === 'video') {
-        // Créer une miniature pour la vidéo
         thumbnail = await this.createVideoThumbnail(file)
         duration = await this.getVideoDuration(file)
       }
@@ -160,7 +150,6 @@ export const mediaService = {
     }
   },
 
-  // Formater la taille du fichier
   formatFileSize(bytes) {
     if (bytes === 0) return '0 B'
     const k = 1024
@@ -169,7 +158,6 @@ export const mediaService = {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   },
 
-  // Formater la durée vidéo
   formatDuration(seconds) {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60

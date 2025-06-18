@@ -44,7 +44,6 @@ export const debounce = (func, wait) => {
 }
 
 export const formatPhoneNumber = (phone) => {
-  // Format français : +33 6 12 34 56 78
   return phone.replace(/(\+221)(\d)(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5 $6')
 }
 

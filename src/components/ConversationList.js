@@ -71,7 +71,6 @@ export const createConversationList = async (container, rerender) => {
             </div>
           </div>
 
-          <!-- Actions (visibles au hover) -->
           <div class="conversation-actions mt-2 hidden">
             <div class="flex gap-2 flex-wrap">
               <button class="pin-btn text-xs px-2 py-1 rounded ${conversation.isPinned ? 'bg-yellow-500 text-white' : 'bg-whatsapp-bg-chat text-whatsapp-text-secondary'}" 

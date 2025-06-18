@@ -223,7 +223,6 @@ export const audioService = {
 
   async startRecording() {
     try {
-      // Demander l'autorisation d'accès au microphone
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -245,7 +244,7 @@ export const audioService = {
         }
       }
 
-      this.mediaRecorder.start(100) // Collecter les données toutes les 100ms
+      this.mediaRecorder.start(100) 
       return true
 
     } catch (error) {
@@ -266,7 +265,6 @@ export const audioService = {
           type: this.getSupportedMimeType() 
         })
         
-        // Arrêter le stream
         if (this.stream) {
           this.stream.getTracks().forEach(track => track.stop())
         }
@@ -308,14 +306,11 @@ export const audioService = {
 
   async saveAudioMessage(audioBlob, conversationId, senderId) {
     try {
-      // Créer un nom de fichier unique
       const timestamp = Date.now()
       const fileName = `voice_${conversationId}_${senderId}_${timestamp}.webm`
       
-      // Convertir le blob en base64 pour le stockage
       const base64Audio = await this.blobToBase64(audioBlob)
       
-      // Calculer la durée approximative (vous pouvez améliorer cela)
       const duration = await this.getAudioDuration(audioBlob)
 
       return {

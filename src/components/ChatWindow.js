@@ -70,7 +70,6 @@ export const createChatWindow = async (container, rerender) => {
           </div>
         </div>
 
-        <!-- Messages -->
         <div id="messages-container" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
           ${renderMessages(state.messages)}
           <div id="typing-indicator" class="hidden">
@@ -84,10 +83,8 @@ export const createChatWindow = async (container, rerender) => {
           </div>
         </div>
 
-        <!-- Zone de saisie -->
 
 
-<!-- Zone de saisie -->
 <div class="p-4 bg-whatsapp-bg-light border-t border-whatsapp-bg-dark">
   <form id="message-form" class="flex gap-3 items-end">
     <div class="flex-1 relative">
@@ -123,12 +120,10 @@ export const createChatWindow = async (container, rerender) => {
     </button>
   </form>
 
-  <!-- Picker d'emojis -->
   <div id="emoji-picker-container" class="hidden absolute bottom-20 left-4 bg-white rounded-lg shadow-lg z-50">
     <emoji-picker></emoji-picker>
   </div>
 
-  <!-- Input file caché -->
   <input type="file" id="media-input" accept="image/*,video/*" multiple class="hidden">
 </div>
 
@@ -563,7 +558,6 @@ const sendMediaMessages = async () => {
         isDeleted: false
       }
 
-      // Envoyer le message
       const response = await fetch('https://json-server-7n1p.onrender.com/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

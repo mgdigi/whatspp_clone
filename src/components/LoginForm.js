@@ -63,7 +63,6 @@ export const createLoginForm = (container, onLogin) => {
           </div>
         </div>
 
-        <!-- Boutons de connexion rapide -->
         <div class="mt-4 space-y-2">
           <p class="text-whatsapp-text-secondary text-sm text-center">Connexion rapide :</p>
           <div class="flex gap-2">

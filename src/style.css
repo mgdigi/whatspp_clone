@@ -12,7 +12,6 @@ body {
   overflow: hidden;
 }
 
-/* Styles pour les scrollbars */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -30,7 +29,6 @@ body {
   background: #25D366;
 }
 
-/* Animation pour les messages */
 .message-enter {
   opacity: 0;
   transform: translateY(10px);
@@ -44,7 +42,6 @@ body {
   }
 }
 
-/* Styles pour les bulles de messages */
 .message-bubble {
   max-width: 80%;
   word-wrap: break-word;
@@ -61,7 +58,6 @@ body {
   margin-right: auto;
 }
 
-/* Indicateur de saisie */
 .typing-indicator {
   display: flex;
   align-items: center;
@@ -95,7 +91,6 @@ body {
   }
 }
 
-/* Styles pour la prévisualisation des médias */
 .media-preview-item {
   position: relative;
   border-radius: 8px;
@@ -154,7 +149,6 @@ body {
   font-size: 12px;
 }
 
-/* Styles pour le picker d'emojis */
 #emoji-picker-container {
   max-width: 350px;
   max-height: 400px;
@@ -182,7 +176,6 @@ emoji-picker {
   height: 400px;
 }
 
-/* Responsive */
 @media (max-width: 640px) {
   #emoji-picker-container {
     left: 1rem;

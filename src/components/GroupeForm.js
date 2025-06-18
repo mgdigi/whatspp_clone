@@ -35,7 +35,6 @@ export const createGroupForm = async (container, rerender) => {
               <img id="preview-image" src="" alt="Aperçu" class="w-20 h-20 rounded-full object-cover mx-auto border-2 border-whatsapp-green">
             </div>
             
-            <!-- Input file -->
             <input
               type="file"
               id="group-avatar"
@@ -43,7 +42,6 @@ export const createGroupForm = async (container, rerender) => {
               class="hidden"
             >
             
-            <!-- Bouton personnalisé pour l'upload -->
             <button
               type="button"
               id="upload-btn"
@@ -55,7 +53,6 @@ export const createGroupForm = async (container, rerender) => {
               Choisir une photo
             </button>
             
-            <!-- Bouton pour supprimer l'image -->
             <button
               type="button"
               id="remove-avatar-btn"

@@ -10,7 +10,7 @@ export const renderMainInterface = (container, setupEventListeners) => {
             <i class="fa-solid fa-message"></i>
           </button>
           <button id="show-contacts-btn" class="bg-whatsapp-bg-light text-whatsapp-text-secondary hover:text-white px-3 py-1 rounded-full text-sm mt-2">
-           <i class="fa-solid fa-circle-notch"></i>
+            <i class="fa-solid fa-address-card"></i>
           </button>
           <button class="bg-whatsapp-bg-light text-whatsapp-text-secondary hover:text-white px-3 py-1 rounded-full text-sm mt-2">
             <i class="fa-solid fa-phone"></i>
@@ -33,7 +33,6 @@ export const renderMainInterface = (container, setupEventListeners) => {
      
       <!-- Panel des contacts/conversations -->
       <div class="w-full md:w-1/3 lg:w-1/4 bg-whatsapp-bg-light border-r border-whatsapp-bg-dark flex flex-col">
-        <!-- Header -->
         <div class="p-4 bg-whatsapp-bg-light border-b border-whatsapp-bg-dark">
           <div class="flex items-center justify-between">
             <h1 class="text-xl font-semibold text-whatsapp-text-light">
@@ -93,7 +92,6 @@ export const renderMainInterface = (container, setupEventListeners) => {
          
       </div>
 
-      <!-- Zone de chat -->
       <div class="flex-1 flex flex-col">
         ${state.showContactForm ? '<div id="contact-form-modal" class="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"></div>' : ''}
 

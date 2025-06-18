@@ -40,7 +40,6 @@ export const createContactList = async (container, rerender) => {
             <span class="text-white font-medium">Nouveau groupe</span>
         </div>
 
-        <!-- Nouveau contact -->
         <div id="add-contact-btn" class="flex items-center space-x-3 p-3 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors duration-200">
             <div class="bg-green-500 rounded-full p-2">
                 <i class="fa-solid fa-address-book"></i>
@@ -48,7 +47,6 @@ export const createContactList = async (container, rerender) => {
             <span class="text-white font-medium">Nouveau contact</span>
         </div>
 
-        <!-- Nouvelle communauté -->
         <div class="flex items-center space-x-3 p-3 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors duration-200">
             <div class="bg-green-500 rounded-full p-2">
                 <i class="fa-solid fa-people-roof"></i>

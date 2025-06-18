@@ -60,7 +60,6 @@ export const createUserSearch = async (container, rerender) => {
     const searchInput = document.querySelector('#user-search-input')
     const closeBtn = document.querySelector('#close-search-btn')
 
-    // Recherche en temps réel
     if (searchInput) {
       let searchTimeout
       searchInput.addEventListener('input', (e) => {
@@ -88,11 +87,9 @@ export const createUserSearch = async (container, rerender) => {
         }, 300)
       })
 
-      // Focus automatique
       searchInput.focus()
     }
 
-    // Démarrer une conversation
     const startChatButtons = document.querySelectorAll('.start-chat-btn')
     startChatButtons.forEach(btn => {
       btn.addEventListener('click', async (e) => {
@@ -100,13 +97,11 @@ export const createUserSearch = async (container, rerender) => {
         const userId = parseInt(btn.dataset.userId)
         
         try {
-          // Créer ou trouver la conversation directe
           const conversation = await conversationService.createDirectConversation(
             state.currentUser.id,
             userId
           )
           
-          // Recharger les conversations
           const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
           setState({ 
             ...state, 

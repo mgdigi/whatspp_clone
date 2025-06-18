@@ -48,7 +48,6 @@ export const createStatusList = async (container, rerender) => {
           </div>
         </div>
 
-        <!-- Statuts récents -->
         <div class="p-4">
           <h3 class="text-sm font-medium text-whatsapp-text-secondary mb-3">Mises à jour récentes</h3>
           
