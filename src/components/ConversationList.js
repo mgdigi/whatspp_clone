@@ -15,9 +15,8 @@ export const createConversationList = async (container, rerender) => {
       container.innerHTML = `
         <div class="p-4 text-center text-whatsapp-text-secondary">
           <p>Aucune conversation ${getFilterLabel(state.currentFilter)}</p>
-        </div>
-      `
-      return 
+        </div>`
+      return
     }
 
     const conversationsWithUserInfo = await Promise.all(
@@ -53,11 +52,12 @@ export const createConversationList = async (container, rerender) => {
             <div class="relative">
               <img src="${avatarSrc}" alt="${conversation.displayName}" class="w-12 h-12 rounded-full object-cover border border-whatsapp-bg-dark">
               ${conversation.isOnline ? '<div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-whatsapp-bg-light"></div>' : ''}
+              ${conversation.unreadCount > 0 ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-whatsapp-bg-light"></div>' : ''}
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <h3 class="font-medium text-whatsapp-text-light truncate">${conversation.displayName}</h3>
+                  <h3 class="font-medium text-whatsapp-text-light truncate ${conversation.unreadCount > 0 ? 'font-bold' : ''}">${conversation.displayName}</h3>
                   ${conversation.type === 'group' ? '<span class="text-whatsapp-text-secondary text-xs">👥</span>' : ''}
                   ${conversation.isPinned ? '<span class="text-yellow-400 text-sm">📌</span>' : ''}
                   ${conversation.isArchived ? '<span class="text-whatsapp-text-secondary text-sm">📁</span>' : ''}
@@ -65,12 +65,12 @@ export const createConversationList = async (container, rerender) => {
                 <span class="text-xs text-whatsapp-text-secondary">${formatTime(conversation.lastMessageTime)}</span>
               </div>
               <div class="flex items-center justify-between mt-1">
-                <p class="text-sm text-whatsapp-text-secondary truncate">${conversation.lastMessage}</p>
+                <p class="text-sm text-whatsapp-text-secondary truncate ${conversation.unreadCount > 0 ? 'text-whatsapp-text-light font-medium' : ''}">${conversation.lastMessage}</p>
                 ${conversation.unreadCount > 0 ? `<span class="bg-whatsapp-green text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">${conversation.unreadCount}</span>` : ''}
               </div>
             </div>
           </div>
-          
+
           <!-- Actions (visibles au hover) -->
           <div class="conversation-actions mt-2 hidden">
             <div class="flex gap-2 flex-wrap">
@@ -82,11 +82,28 @@ export const createConversationList = async (container, rerender) => {
                       data-conversation-id="${conversation.id}">
                 ${conversation.isArchived ? 'Désarchiver' : 'Archiver'}
               </button>
-              ${conversation.type === 'group' && conversation.admins.includes(state.currentUser.id) ? `
-                <button class="delete-group-btn text-xs px-2 py-1 rounded bg-red-500 text-white" 
+              ${conversation.unreadCount > 0 ? `
+                <button class="mark-read-btn text-xs px-2 py-1 rounded bg-green-500 text-white" 
                         data-conversation-id="${conversation.id}">
-                  Supprimer groupe
+                  Marquer comme lu
                 </button>
+              ` : ''}
+              ${conversation.type === 'group' ? `
+                <button class="group-info-btn text-xs px-2 py-1 rounded bg-purple-500 text-white" 
+                        data-conversation-id="${conversation.id}">
+                  Info groupe
+                </button>
+                ${conversation.admins.includes(state.currentUser.id) ? `
+                  <button class="delete-group-btn text-xs px-2 py-1 rounded bg-red-500 text-white" 
+                          data-conversation-id="${conversation.id}">
+                    Supprimer groupe
+                  </button>
+                ` : `
+                  <button class="leave-group-btn text-xs px-2 py-1 rounded bg-orange-500 text-white" 
+                          data-conversation-id="${conversation.id}">
+                    Quitter groupe
+                  </button>
+                `}
               ` : ''}
             </div>
           </div>
@@ -99,6 +116,7 @@ export const createConversationList = async (container, rerender) => {
 
   const setupConversationListEvents = (rerender) => {
     const conversationItems = container.querySelectorAll('.conversation-item')
+    
     conversationItems.forEach(item => {
       item.addEventListener('click', (e) => {
         if (!e.target.closest('button')) {
@@ -128,7 +146,6 @@ export const createConversationList = async (container, rerender) => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation()
         const conversationId = parseInt(btn.dataset.conversationId)
-        
         try {
           await conversationService.togglePin(conversationId)
           const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
@@ -145,7 +162,6 @@ export const createConversationList = async (container, rerender) => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation()
         const conversationId = parseInt(btn.dataset.conversationId)
-        
         try {
           await conversationService.toggleArchive(conversationId)
           const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
@@ -153,6 +169,59 @@ export const createConversationList = async (container, rerender) => {
           rerender()
         } catch (error) {
           alert('Erreur lors de l\'archivage')
+        }
+      })
+    })
+
+    const markReadButtons = container.querySelectorAll('.mark-read-btn')
+    markReadButtons.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation()
+        const conversationId = parseInt(btn.dataset.conversationId)
+        try {
+          await conversationService.markConversationAsRead(conversationId, state.currentUser.id)
+          const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
+          setState({ ...state, conversations: updatedConversations })
+          rerender()
+        } catch (error) {
+          alert('Erreur lors du marquage comme lu')
+        }
+      })
+    })
+
+    const groupInfoButtons = container.querySelectorAll('.group-info-btn')
+    groupInfoButtons.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation()
+        const conversationId = parseInt(btn.dataset.conversationId)
+        setState({ 
+          ...state, 
+          showGroupInfo: true,
+          selectedConversationId: conversationId 
+        })
+        rerender()
+      })
+    })
+
+    const leaveGroupButtons = container.querySelectorAll('.leave-group-btn')
+    leaveGroupButtons.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation()
+        const conversationId = parseInt(btn.dataset.conversationId)
+        
+        if (confirm('Êtes-vous sûr de vouloir quitter ce groupe ?')) {
+          try {
+            await conversationService.leaveGroup(conversationId, state.currentUser.id)
+            const updatedConversations = await conversationService.getUserConversations(state.currentUser.id)
+            setState({ 
+              ...state, 
+              conversations: updatedConversations,
+              selectedConversationId: state.selectedConversationId === conversationId ? null : state.selectedConversationId
+            })
+            rerender()
+          } catch (error) {
+            alert('Erreur lors de la sortie du groupe: ' + error.message)
+          }
         }
       })
     })
@@ -194,6 +263,15 @@ const filterConversations = async (conversations, filter, searchQuery) => {
     case 'archived':
       filtered = conversations.filter(c => c.isArchived)
       break
+    case 'unread':
+      filtered = conversations.filter(c => c.unreadCount > 0 && !c.isArchived)
+      break
+    case 'groups':
+      filtered = conversations.filter(c => c.type === 'group' && !c.isArchived)
+      break
+    case 'direct':
+      filtered = conversations.filter(c => c.type === 'direct' && !c.isArchived)
+      break
     case 'all':
     default:
       filtered = conversations.filter(c => !c.isArchived)
@@ -221,6 +299,10 @@ const filterConversations = async (conversations, filter, searchQuery) => {
   return filtered.sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1
     if (!a.isPinned && b.isPinned) return 1
+    
+    if (a.unreadCount > 0 && b.unreadCount === 0) return -1
+    if (a.unreadCount === 0 && b.unreadCount > 0) return 1
+    
     return new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
   })
 }
@@ -231,6 +313,12 @@ const getFilterLabel = (filter) => {
       return 'épinglée'
     case 'archived':
       return 'archivée'
+    case 'unread':
+      return 'non lue'
+    case 'groups':
+      return 'de groupe'
+    case 'direct':
+      return 'directe'
     default:
       return ''
   }

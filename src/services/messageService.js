@@ -11,7 +11,7 @@ export const messageService = {
     }
   },
 
-  // Envoyer un message
+  
   async sendMessage(conversationId, senderId, text) {
     try {
       const message = {
@@ -20,7 +20,7 @@ export const messageService = {
         text,
         timestamp: new Date().toISOString(),
         isRead: false,
-        readBy: [senderId], // L'expéditeur a "lu" son propre message
+        readBy: [senderId], 
         isDeleted: false
       }
 
@@ -32,8 +32,9 @@ export const messageService = {
 
       const savedMessage = await response.json()
       
-      // Mettre à jour la conversation
       await conversationService.updateLastMessage(conversationId, savedMessage)
+      
+       await this.updateConversationAfterMessage(conversationId, savedMessage, senderId)
       
       return savedMessage
     } catch (error) {
@@ -42,7 +43,39 @@ export const messageService = {
     }
   },
 
-  // Marquer un message comme lu
+  async updateConversationAfterMessage(conversationId, message, senderId) {
+    try {
+      const response = await fetch(`https://json-server-7n1p.onrender.com/conversations/${conversationId}`)
+      const conversation = await response.json()
+      
+      let newUnreadCount = conversation.unreadCount || 0
+      
+      if (conversation.type === 'direct') {
+        const otherParticipant = conversation.participants.find(id => id !== senderId)
+        if (otherParticipant) {
+          newUnreadCount = (conversation.unreadCount || 0) + 1
+        }
+      } else if (conversation.type === 'group') {
+        const otherParticipants = conversation.participants.filter(id => id !== senderId)
+        newUnreadCount = otherParticipants.length
+      }
+
+      await fetch(`https://json-server-7n1p.onrender.com/conversations/${conversationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...conversation,
+          lastMessage: message.text,
+          lastMessageTime: message.timestamp,
+          unreadCount: newUnreadCount,
+          lastSenderId: senderId 
+        })
+      })
+    } catch (error) {
+      console.error('Erreur mise à jour conversation:', error)
+    }
+  },
+
   async markAsRead(messageId, userId) {
     try {
       const response = await fetch(`https://json-server-7n1p.onrender.com/messages/${messageId}`)
@@ -57,7 +90,7 @@ export const messageService = {
           body: JSON.stringify({
             ...message,
             readBy: updatedReadBy,
-            isRead: updatedReadBy.length > 1 // Lu si plus d'une personne l'a lu
+            isRead: updatedReadBy.length > 1 
           })
         })
       }
@@ -66,7 +99,6 @@ export const messageService = {
     }
   },
 
-  // Marquer tous les messages d'une conversation comme lus
   async markConversationAsRead(conversationId, userId) {
     try {
       const messages = await this.getConversationMessages(conversationId)
@@ -77,7 +109,6 @@ export const messageService = {
         }
       }
 
-      // Réinitialiser le compteur de messages non lus
       const convResponse = await fetch(`https://json-server-7n1p.onrender.com/conversations/${conversationId}`)
       const conversation = await convResponse.json()
       
@@ -94,13 +125,11 @@ export const messageService = {
     }
   },
 
-  // Supprimer un message
   async deleteMessage(messageId, userId) {
     try {
       const response = await fetch(`https://json-server-7n1p.onrender.com/messages/${messageId}`)
       const message = await response.json()
       
-      // Vérifier que l'utilisateur peut supprimer ce message
       if (message.senderId !== userId) {
         throw new Error('Vous ne pouvez supprimer que vos propres messages')
       }

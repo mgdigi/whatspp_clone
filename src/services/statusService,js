@@ -1,0 +1,141 @@
+export const statusService = {
+  async createStatus(userId, content, type = 'text', mediaData = null, backgroundColor = '#25D366') {
+    try {
+      const status = {
+        userId,
+        content,
+        type, 
+        mediaData,
+        backgroundColor,
+        timestamp: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        views: [],
+        isActive: true
+      }
+
+      const response = await fetch('https://json-server-7n1p.onrender.com/statuses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(status)
+      })
+
+      return await response.json()
+    } catch (error) {
+      console.error('Erreur création statut:', error)
+      throw error
+    }
+  },
+
+  async getUserStatuses(userId) {
+    try {
+      const response = await fetch(`https://json-server-7n1p.onrender.com/statuses?userId=${userId}&_sort=timestamp&_order=desc`)
+      const statuses = await response.json()
+      
+      const activeStatuses = statuses.filter(status => {
+        const now = new Date()
+        const expiresAt = new Date(status.expiresAt)
+        return expiresAt > now && status.isActive
+      })
+
+      return activeStatuses
+    } catch (error) {
+      console.error('Erreur récupération statuts utilisateur:', error)
+      return []
+    }
+  },
+
+  async getAllActiveStatuses() {
+    try {
+      const response = await fetch('https://json-server-7n1p.onrender.com/statuses?_sort=timestamp&_order=desc')
+      const statuses = await response.json()
+      
+      const now = new Date()
+      const activeStatuses = statuses.filter(status => {
+        const expiresAt = new Date(status.expiresAt)
+        return expiresAt > now && status.isActive
+      })
+
+      const groupedStatuses = {}
+      activeStatuses.forEach(status => {
+        if (!groupedStatuses[status.userId]) {
+          groupedStatuses[status.userId] = []
+        }
+        groupedStatuses[status.userId].push(status)
+      })
+
+      return groupedStatuses
+    } catch (error) {
+      console.error('Erreur récupération tous les statuts:', error)
+      return {}
+    }
+  },
+
+  async viewStatus(statusId, viewerId) {
+    try {
+      const response = await fetch(`https://json-server-7n1p.onrender.com/statuses/${statusId}`)
+      const status = await response.json()
+
+      if (!status.views.some(view => view.userId === viewerId)) {
+        const updatedViews = [...status.views, {
+          userId: viewerId,
+          timestamp: new Date().toISOString()
+        }]
+
+        await fetch(`https://json-server-7n1p.onrender.com/statuses/${statusId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...status,
+            views: updatedViews
+          })
+        })
+      }
+    } catch (error) {
+      console.error('Erreur marquage vue statut:', error)
+    }
+  },
+
+  async deleteStatus(statusId, userId) {
+    try {
+      const response = await fetch(`https://json-server-7n1p.onrender.com/statuses/${statusId}`)
+      const status = await response.json()
+
+      if (status.userId !== userId) {
+        throw new Error('Vous ne pouvez supprimer que vos propres statuts')
+      }
+
+      await fetch(`https://json-server-7n1p.onrender.com/statuses/${statusId}`, {
+        method: 'DELETE'
+      })
+
+      return true
+    } catch (error) {
+      console.error('Erreur suppression statut:', error)
+      throw error
+    }
+  },
+
+  formatTimeRemaining(expiresAt) {
+    const now = new Date()
+    const expires = new Date(expiresAt)
+    const diff = expires - now
+
+    if (diff <= 0) return 'Expiré'
+
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    }
+    return `${minutes}m`
+  },
+
+  getBackgroundColors() {
+    return [
+      '#25D366', '#128C7E', '#075E54', '#34B7F1', '#667BC6',
+      '#DA70D6', '#FF6347', '#FFD700', '#98FB98', '#F0E68C',
+      '#DDA0DD', '#87CEEB', '#F4A460', '#FF69B4', '#00CED1'
+    ]
+  }
+}

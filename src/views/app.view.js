@@ -57,7 +57,12 @@ export const renderMainInterface = (container, setupEventListeners) => {
               <button id="filter-all" class="filter-btn px-3 py-1 rounded-full text-xs ${state.currentFilter === 'all' ? 'bg-whatsapp-green text-white' : 'bg-whatsapp-bg-dark text-whatsapp-text-secondary'}">
                 Tous
               </button>
-              
+               <button id="filter-unread" class="filter-btn px-3 py-1 rounded-full text-xs ${state.currentFilter === 'unread' ? 'bg-whatsapp-green text-white' : 'bg-whatsapp-bg-dark text-whatsapp-text-secondary'}">
+                Non Lus
+              </button>
+              <button id="filter-groups" class="filter-btn px-3 py-1 rounded-full text-xs ${state.currentFilter === 'groups' ? 'bg-whatsapp-green text-white' : 'bg-whatsapp-bg-dark text-whatsapp-text-secondary'}">
+                Groupe
+              </button>
               <button id="filter-archived" class="filter-btn px-3 py-1 rounded-full text-xs ${state.currentFilter === 'archived' ? 'bg-whatsapp-green text-white' : 'bg-whatsapp-bg-dark text-whatsapp-text-secondary'}">
                 Archivés
               </button>

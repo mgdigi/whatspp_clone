@@ -38,7 +38,6 @@ export const createLoginForm = (container, onLogin) => {
             <input
               type="password"
               id="password"
-              
               class="w-full bg-whatsapp-bg-dark text-whatsapp-text-light rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-whatsapp-green"
               placeholder="password123"
             >
@@ -48,6 +47,7 @@ export const createLoginForm = (container, onLogin) => {
 
           <button
             type="submit"
+            id="login-btn"
             class="w-full bg-whatsapp-green text-white py-3 rounded-lg hover:bg-whatsapp-dark-green transition-colors font-medium"
           >
             Se connecter
@@ -62,6 +62,22 @@ export const createLoginForm = (container, onLogin) => {
             <p>• mbaye / password123</p>
           </div>
         </div>
+
+        <!-- Boutons de connexion rapide -->
+        <div class="mt-4 space-y-2">
+          <p class="text-whatsapp-text-secondary text-sm text-center">Connexion rapide :</p>
+          <div class="flex gap-2">
+            <button class="quick-login-btn flex-1 bg-whatsapp-bg-dark text-whatsapp-text-light py-2 px-3 rounded text-sm hover:bg-gray-600 transition-colors" data-username="mohamed" data-password="password123">
+              Mohamed
+            </button>
+            <button class="quick-login-btn flex-1 bg-whatsapp-bg-dark text-whatsapp-text-light py-2 px-3 rounded text-sm hover:bg-gray-600 transition-colors" data-username="bilal" data-password="password123">
+              Bilal
+            </button>
+            <button class="quick-login-btn flex-1 bg-whatsapp-bg-dark text-whatsapp-text-light py-2 px-3 rounded text-sm hover:bg-gray-600 transition-colors" data-username="mbaye" data-password="password123">
+              Mbaye
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `
@@ -72,44 +88,142 @@ export const createLoginForm = (container, onLogin) => {
 const setupLoginEvents = (onLogin) => {
   const form = document.querySelector('#login-form')
   const errorMessage = document.querySelector('#error-message')
+  const loginBtn = document.querySelector('#login-btn')
+  const quickLoginBtns = document.querySelectorAll('.quick-login-btn')
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
-    
     const username = document.querySelector('#username').value.trim()
     const password = document.querySelector('#password').value.trim()
-
-    if (!username || !password) {
-      showError('Veuillez remplir tous les champs')
-      return
-    }
-
-    try {
-      const result = await authService.login(username, password)
-      
-      if (result.success) {
-        onLogin(result.user)
-        setState({
-          showLoginForm: false,
-          currentUser: result.user,
-          users: result.users,
-          avatars: result.avatars,
-          showChatWindow: true,
-        })
-      
-      } else {
-        showError(result.error)
-      }
-    } catch (error) {
-      showError('Erreur de connexion')
-    }
+    
+    await handleLogin(username, password, onLogin, loginBtn, errorMessage)
   })
 
-  const showError = (message) => {
-    errorMessage.textContent = message
-    errorMessage.classList.remove('hidden')
-    setTimeout(() => {
-      errorMessage.classList.add('hidden')
-    }, 5000)
+  quickLoginBtns.forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault()
+      const username = btn.dataset.username
+      const password = btn.dataset.password
+      
+      document.querySelector('#username').value = username
+      document.querySelector('#password').value = password
+      
+      await handleLogin(username, password, onLogin, btn, errorMessage)
+    })
+  })
+}
+
+const handleLogin = async (username, password, onLogin, button, errorMessage) => {
+  if (!username || !password) {
+    showError('Veuillez remplir tous les champs', errorMessage)
+    return
   }
+
+  const originalText = button.textContent
+  button.textContent = 'Connexion...'
+  button.disabled = true
+  hideError(errorMessage)
+
+  try {
+    const result = await authService.login(username, password)
+    
+    if (result.success) {
+      localStorage.setItem('currentUser', JSON.stringify(result.user))
+      localStorage.setItem('isAuthenticated', 'true')
+      
+      setState({
+        showLoginForm: false,
+        currentUser: result.user,
+        users: result.users,
+        avatars: result.avatars,
+        showChatWindow: true,
+        isAuthenticated: true
+      })
+
+      button.textContent = 'Connexion réussie !'
+      button.classList.remove('bg-whatsapp-green')
+      button.classList.add('bg-green-600')
+
+      setTimeout(() => {
+        if (onLogin) {
+          onLogin(result.user)
+        }
+      }, 800) 
+
+    } else {
+      showError(result.error || 'Erreur de connexion', errorMessage)
+    }
+  } catch (error) {
+    console.error('Erreur de connexion:', error)
+    showError('Erreur de connexion. Veuillez réessayer.', errorMessage)
+  } finally {
+    setTimeout(() => {
+      button.textContent = originalText
+      button.disabled = false
+      button.classList.remove('bg-green-600')
+      button.classList.add('bg-whatsapp-green')
+    }, 2000)
+  }
+}
+
+const showError = (message, errorElement) => {
+  errorElement.textContent = message
+  errorElement.classList.remove('hidden')
+  
+  setTimeout(() => {
+    hideError(errorElement)
+  }, 5000)
+}
+
+const hideError = (errorElement) => {
+  errorElement.classList.add('hidden')
+}
+
+export const checkExistingSession = async () => {
+  try {
+    const savedUser = localStorage.getItem('currentUser')
+    const isAuthenticated = localStorage.getItem('isAuthenticated')
+    
+    if (savedUser && isAuthenticated === 'true') {
+      const user = JSON.parse(savedUser)
+      
+      const result = await authService.validateSession(user.id)
+      
+      if (result && result.success) {
+        setState({
+          showLoginForm: false,
+          currentUser: user,
+          users: result.users || [],
+          avatars: result.avatars || [],
+          showChatWindow: true,
+          isAuthenticated: true
+        })
+        return user
+      } else {
+        clearSession()
+      }
+    }
+  } catch (error) {
+    console.error('Erreur lors de la vérification de session:', error)
+    clearSession()
+  }
+  return null
+}
+
+export const clearSession = () => {
+  localStorage.removeItem('currentUser')
+  localStorage.removeItem('isAuthenticated')
+  setState({
+    showLoginForm: true,
+    currentUser: null,
+    users: [],
+    avatars: [],
+    showChatWindow: false,
+    isAuthenticated: false
+  })
+}
+
+export const logout = () => {
+  clearSession()
+  window.location.reload()
 }

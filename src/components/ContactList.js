@@ -58,17 +58,13 @@ export const createContactList = async (container, rerender) => {
     </div>
     </div>
     <h2 class="ml-5 text-text-light"> Liste des contacts ${state.currentFilter === 'favorites' ? 'favoris' : state.currentFilter === 'archived' ? 'archivés' : ''}</h2>
-    ` +
-    
-    
+    ` +    
     filteredContacts.map(contact => {
       const avatarSrc = contact.avatar.startsWith('/avatars/') 
         ? avatarService.getAvatar(contact.id)
         : contact.avatar
-
       return `
-      
-        <div class="contact-item p-4 border-b border-whatsapp-bg-dark  cursor-pointer transition-colors ${state.selectedContactId === contact.id ? 'bg-whatsapp-bg-dark' : ''}" 
+              <div class="contact-item p-4 border-b border-whatsapp-bg-dark  cursor-pointer transition-colors ${state.selectedContactId === contact.id ? 'bg-whatsapp-bg-dark' : ''}" 
              data-contact-id="${contact.id}">
           <div class="flex items-center gap-3">
             <img src="${avatarSrc}" alt="${contact.name}" class="w-12 h-12 rounded-full object-cover border border-whatsapp-bg-dark">
@@ -88,7 +84,6 @@ export const createContactList = async (container, rerender) => {
             </div>
           </div>
           
-          <!-- Actions (visibles au hover) -->
           <div class="contact-actions mt-2 hidden">
             <div class="flex gap-2">
               <button class="favorite-btn text-xs px-2 py-1 rounded ${contact.isFavorite ? 'bg-yellow-500 text-white' : 'bg-whatsapp-bg-chat text-whatsapp-text-secondary'}" 
